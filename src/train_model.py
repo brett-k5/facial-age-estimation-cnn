@@ -16,6 +16,7 @@ def in_colab():
         return False
 
 if in_colab():
+    from google.colab import files
     import pre_processing
 else:
     from src import pre_processing
@@ -73,7 +74,8 @@ def train_model(model,
 
     model.fit(train_data,
               validation_data=val_data,
-              batch_size=batch_size, epochs=epochs,
+              batch_size=batch_size, 
+              epochs=epochs,
               steps_per_epoch=steps_per_epoch,
               validation_steps=validation_steps,
               callbacks=[checkpoint],
@@ -82,4 +84,25 @@ def train_model(model,
     return model
 
 model = create_model(image_shape)
-train_model(model, train_ds, val_ds)
+model = train_model(model, train_ds, val_ds)
+
+if in_colab:
+    model.save('model.h5')
+    files.download('model.h5')
+else:
+    # Get the absolute path to the current script's location
+    project_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Define the 'models' subdirectory path
+    models_dir = os.path.join(project_dir, 'models')
+
+    # Create the 'models' directory if it doesn't exist
+    os.makedirs(models_dir, exist_ok=True)
+
+    # Define full path to save the model
+    model_path = os.path.join(models_dir, 'model.h5')
+
+    # Save the model
+    model.save(model_path)
+
+    print(f"Model saved to: {model_path}")

@@ -1,3 +1,5 @@
+
+
 # Deep learning: TensorFlow + Keras
 import tensorflow as tf
 from tensorflow import keras
@@ -6,7 +8,17 @@ from tensorflow.keras.layers import (Dense, GlobalAveragePooling2D)
 from tensorflow.keras.applications import ResNet50
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import ModelCheckpoint
-from src import pre_processing
+def in_colab():
+    try:
+        import google.colab
+        return True
+    except ImportError:
+        return False
+
+if in_colab():
+    import pre_processing
+else:
+    from src import pre_processing
 
 train_ds = pre_processing.train_ds
 val_ds = pre_processing.val_ds

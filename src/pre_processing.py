@@ -40,15 +40,19 @@ try:
     train_df = pd.read_csv(os.path.join(base_path, 'gt_avg_train.csv'))
     val_df = pd.read_csv(os.path.join(base_path, 'gt_avg_valid.csv'))
     test_df = pd.read_csv(os.path.join(base_path, 'gt_avg_test.csv'))
+    print("Loaded data from Google Drive")
 except Exception as e:
-    print("Script not being run in colab")
-
-try:
-    train_df = pd.read_csv('gt_avg_train.csv')
-    val_df = pd.read_csv('gt_avg_valid.csv')
-    test_df = pd.read_csv('gt_avg_test.csv')
-except Exception as e:
-    print("Script not being run out of project directory")
+    print("Not running in Colab or failed to load from Drive:", e)
+    try:
+        train_df = pd.read_csv('gt_avg_train.csv')
+        val_df = pd.read_csv('gt_avg_valid.csv')
+        test_df = pd.read_csv('gt_avg_test.csv')
+        print("Loaded data from local project directory")
+    except Exception as e:
+        print("Failed to load CSV files from local directory:", e)
+        train_df = None
+        val_df = None
+        test_df = None
 
 
 # I ran this to unzip the uploaded zip file with my data in google drive. It does not have to be run again: !unzip "/content/drive/MyDrive/labels_and_images.zip" -d "/content/drive/MyDrive/"

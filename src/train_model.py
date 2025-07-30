@@ -1,6 +1,7 @@
 
 
 # Deep learning: TensorFlow + Keras
+import os
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.models import Sequential
@@ -17,6 +18,7 @@ def in_colab():
 
 if in_colab():
     from google.colab import files
+    import shutil
     import pre_processing
 else:
     from src import pre_processing
@@ -25,6 +27,22 @@ train_ds = pre_processing.train_ds
 val_ds = pre_processing.val_ds
 test_ds = pre_processing.test_ds
 image_shape = pre_processing.image_shape
+
+if in_colab():
+    # Define where to save the logs (inside Google Colab environment)
+    log_dir = '/content/tensorboard_logs'  # Directory to save TensorBoard logs
+    # Ensure the log directory exists, create it if necessary
+    os.makedirs(log_dir, exist_ok=True)
+else:
+    # Define where to save the logs (inside your project directory)
+    log_dir = os.path.join(os.getcwd(), 'logs')  # Directory to save TensorBoard logs
+    # Ensure the log directory exists, create it if necessary
+    os.makedirs(log_dir, exist_ok=True)
+    # Logs are saved directly in the project directory
+    print(f"Logs saved at: {log_dir}")
+
+# Create a TensorBoard callback
+tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=5)
 
 def create_model(input_shape):
 
@@ -45,7 +63,6 @@ def create_model(input_shape):
     model.compile(optimizer=optimizer, loss='mse', metrics=['mae'])
 
     return model
-
 
 
 
@@ -78,17 +95,22 @@ def train_model(model,
               epochs=epochs,
               steps_per_epoch=steps_per_epoch,
               validation_steps=validation_steps,
-              callbacks=[checkpoint],
+              callbacks=[tensorboard_callback],
               verbose=2)
 
     return model
 
+
 model = create_model(image_shape)
 model = train_model(model, train_ds, val_ds)
 
-if in_colab:
+if in_colab():
     model.save('model.h5')
     files.download('model.h5')
+    # Once training is complete, zip the logs (if you want to download the whole log directory)
+    shutil.make_archive(log_dir, 'zip', log_dir)
+    # Download the zipped logs file
+    files.download(f'{log_dir}.zip')
 else:
     # Get the absolute path to the current script's location
     project_dir = os.path.dirname(os.path.abspath(__file__))

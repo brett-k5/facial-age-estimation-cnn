@@ -55,8 +55,6 @@ except Exception as e:
         test_df = None
 
 
-# I ran this to unzip the uploaded zip file with my data in google drive. It does not have to be run again: !unzip "/content/drive/MyDrive/labels_and_images.zip" -d "/content/drive/MyDrive/"
-
 
 print(train_df.head())
 print(val_df.head())
@@ -77,6 +75,7 @@ if in_colab():
     train_df['file_path'] = train_df['file_name'].apply(lambda x: get_file_path('train', x))
     val_df['file_path'] = val_df['file_name'].apply(lambda x: get_file_path('valid', x))
     test_df['file_path']  = test_df['file_name'].apply(lambda x: get_file_path('test', x))
+
 else:
     def get_file_path(folder, fname, use_cropped_faces=True):
         if use_cropped_faces:
@@ -86,6 +85,23 @@ else:
     val_df['file_path'] = val_df['file_name'].apply(lambda x: get_file_path('valid', x))
     test_df['file_path']  = test_df['file_name'].apply(lambda x: get_file_path('test', x))
 
+# We would like to have a test set that includes specifically the ages we care about too. 
+# So let's create one from test_df
+test_df_relevant = test_df[(test_df['real_age'] >= 13) & (test_df['real_age'] <=40)] 
+
+# It is okay if our model is significantly wrong for ages <= 13 and >= 40.
+# The only reason it would be a problem is if it estimates those ages to be on the wrong side of 21
+# We will want to check that too, so let's create two more test_dfs
+test_df_13 = test_df[test_df['real_age'] <= 13]
+test_df_40 = test_df[test_df['real_age'] >= 40]
+
+def load_and_preprocess(path, label):
+    image = tf.io.read_file(path)
+    image = tf.image.decode_jpeg(image, channels=3)         # Decode image
+    image = tf.image.resize(image, [224, 224])              # Resize to uniform size
+    image = image / 255.0                                   # Normalize to [0, 1]
+    return image, label
+
 
 def load_data(df, batch_size=32, shuffle=True):
 
@@ -93,13 +109,6 @@ def load_data(df, batch_size=32, shuffle=True):
     labels = df['real_age'].values
 
     dataset = tf.data.Dataset.from_tensor_slices((file_paths, labels))
-
-    def load_and_preprocess(path, label):
-        image = tf.io.read_file(path)
-        image = tf.image.decode_jpeg(image, channels=3)         # Decode image
-        image = tf.image.resize(image, [224, 224])              # Resize to uniform size
-        image = image / 255.0                                   # Normalize to [0, 1]
-        return image, label
 
     dataset = dataset.map(load_and_preprocess, num_parallel_calls=tf.data.AUTOTUNE)
 
@@ -118,3 +127,6 @@ def load_data(df, batch_size=32, shuffle=True):
 train_ds, image_shape = load_data(train_df, batch_size=32, shuffle=True)
 val_ds, _ = load_data(val_df, batch_size=32, shuffle=False)
 test_ds, _ = load_data(test_df, batch_size=32, shuffle=False)
+test_ds_relevant, _ = load_data(test_df_relevant, batch_size=32, shuffle=False)
+test_ds_13, _ = load_data(test_df_13, batch_size=32, shuffle=False)
+test_ds_40, _ = load_data(test_df_40, batch_size=32, shuffle=False)

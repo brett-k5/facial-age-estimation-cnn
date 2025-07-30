@@ -1,0 +1,8 @@
+{
+    "Condition": "Predictions < 21 for real_age >= 40",
+    "Num_samples": 620,
+    "Num_wrong_model": 11,
+    "Percent_wrong_model": 1.7741935483870968,
+    "Num_wrong_humans": 1,
+    "Percent_wrong_humans": 0.16129032258064516
+}

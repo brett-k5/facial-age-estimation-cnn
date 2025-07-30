@@ -1,14 +1,14 @@
-
-
-# Deep learning: TensorFlow + Keras
+# Standard library
 import os
+
+# Third-party libraries
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import (Dense, GlobalAveragePooling2D)
 from tensorflow.keras.applications import ResNet50
-from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import ModelCheckpoint
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.optimizers import Adam
 def in_colab():
     try:
         import google.colab

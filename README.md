@@ -21,8 +21,8 @@ The model exhibited significantly poorer performance on ages gelow 13 where the 
 📊 Instructions for Loading Data and Running Scripts   
 The train, valid, and test image sets were too large to be uploaded to github, and they can be accessed at the following google drive links:
 
-train: https://drive.google.com/drive/folders/1ozo04vS91jm7as5AJ1YntpgSdNNB0lc9?usp=drive_link
-valid: https://drive.google.com/drive/folders/162wqDbiJjxsQiHaGuOm2x7YN1NoYsFV5?usp=drive_link
+train: https://drive.google.com/drive/folders/1ozo04vS91jm7as5AJ1YntpgSdNNB0lc9?usp=drive_link  
+valid: https://drive.google.com/drive/folders/162wqDbiJjxsQiHaGuOm2x7YN1NoYsFV5?usp=drive_link  
 test: https://drive.google.com/drive/folders/1CSW-DWvmDyfrNBnMBC5l5WInaGnX0xDR?usp=drive_link
 
 If, for some reason, you are struggling to download the data sets from my google drive you can try googling the APPA REAL dataset. As of the time I am writing this you can find it on kaggle here: https://www.kaggle.com/datasets/abhikjha/appa-real-face-cropped

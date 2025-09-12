@@ -1,7 +1,7 @@
-# Standard library
+# Standard library imports
 import os
 
-# Third-party libraries
+# Third-party library imports
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.applications import ResNet50
@@ -9,14 +9,20 @@ from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
+
+# Local application imports
 def in_colab():
+    """
+    checks to see if script is being run in a google colab environment
+    Returns True if it is and False if it isn't
+    """
     try:
         import google.colab
         return True
     except ImportError:
         return False
-
-if in_colab():
+# Change import statement depending on whether or 
+if in_colab(): # not script is being run in google colab
     from google.colab import files
     import shutil
     import pre_processing
@@ -44,12 +50,23 @@ else:
 # Create a TensorBoard callback
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=5)
 
-def create_model(input_shape):
-
+def create_model(input_shape: tf.TensorShape) -> tf.Keras.Model:
     """
-    It defines model
-    """
+    Builds and compiles a Keras model for regression using a pretrained ResNet50 
+    backbone as a feature extractor.
 
+    The model consists of:
+        - A ResNet50 base pretrained on ImageNet, with the top classification layer removed
+        - A global average pooling layer to flatten feature maps
+        - A dense output layer with ReLU activation for regression
+
+    Args:
+        input_shape (tf.TensorShape): The shape of a single input image 
+                                      (height, width, channels), excluding the batch dimension.
+
+    Returns:
+        tf.keras.Model: A compiled Keras model ready for training.
+    """
     backbone = ResNet50(weights='imagenet',
                         input_shape=input_shape,
                         include_top=False)
@@ -66,24 +83,45 @@ def create_model(input_shape):
 
 
 
-def train_model(model,
-                train_data,
-                val_data,
-                batch_size=None,
-                epochs=20,
-                steps_per_epoch=None,
-                validation_steps=None):
+def train_model(model: tf.keras.Model,
+                train_data: tf.data.Dataset,
+                val_data: tf.data.Dataset,
+                batch_size: int = None,
+                epochs: int = 20,
+                steps_per_epoch: int = None,
+                validation_steps: int = None) -> tf.keras.Model:
+    """
+    Trains a Keras model using the provided training and validation datasets.
 
+    This function handles the training loop with support for checkpointing
+    the best model weights based on validation loss, logging training progress,
+    and flexible configuration of training parameters such as batch size,
+    number of epochs, and steps per epoch.
+
+    Args:
+        model (tf.keras.Model): The compiled Keras model to be trained.
+        train_data (tf.data.Dataset): Batched training dataset yielding (inputs, targets).
+        val_data (tf.data.Dataset): Batched validation dataset for evaluating model
+            performance after each epoch.
+        batch_size (int, optional): Number of samples per batch. If None, relies on
+            the batch size of `train_data`.
+        epochs (int, optional): Number of epochs to train the model. Default is 20.
+        steps_per_epoch (int, optional): Number of batches to run per training epoch.
+            If None, defaults to `len(train_data)`.
+        validation_steps (int, optional): Number of batches to run per validation phase.
+            If None, defaults to `len(val_data)`.
+
+    Returns:
+        tf.keras.Model: The trained model instance with weights updated and best weights
+        saved to `'best.weights.h5'`.
     """
-    Trains the model given the parameters
-    """
-    if steps_per_epoch is None:
-        steps_per_epoch = len(train_data)
+    if steps_per_epoch is None: 
+        steps_per_epoch = len(train_data) # len(train_data) will be the number of batches per epoch
 
     if validation_steps is None:
-        validation_steps = len(val_data)
+        validation_steps = len(val_data) # len(val_data) will be the number of batches of validation data per epoch
 
-    checkpoint = ModelCheckpoint( # Choose the parameters that performed best on validation set
+    checkpoint = ModelCheckpoint(# Choose the parameters that performed best on validation set
         filepath='best.weights.h5',
         monitor='val_loss',
         save_best_only=True,
@@ -93,16 +131,16 @@ def train_model(model,
               validation_data=val_data,
               batch_size=batch_size, 
               epochs=epochs,
-              steps_per_epoch=steps_per_epoch,
-              validation_steps=validation_steps,
-              callbacks=[tensorboard_callback],
+              steps_per_epoch=steps_per_epoch, # one step per batch
+              validation_steps=validation_steps, # number of times loss is evaluated per epoch
+              callbacks=[tensorboard_callback], # log results
               verbose=2)
 
     return model
 
 
-model = create_model(image_shape)
-model = train_model(model, train_ds, val_ds)
+model = create_model(image_shape) # create model
+model = train_model(model, train_ds, val_ds) # train model
 
 if in_colab():
     model.save('model.h5')

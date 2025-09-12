@@ -1,36 +1,33 @@
-# ======================
-# Standard Library Imports
-# ======================
-import os                              # File and path operations
-import sys                             # System-specific parameters and functions
+# Standard library imports
+import os
+import sys
 
-# ======================
-# Third-Party Imports
-# ======================
-
-# Numerical and Data Handling
-import numpy as np                     # Numerical computations
-import pandas as pd                    # Data handling and analysis
-
-# Progress Bar
-from tqdm import tqdm                  # Progress bars
-
-# Scikit-learn (data metrics)
+# Third-party library imports
+import numpy as np
+import pandas as pd
+from PIL import Image
 from sklearn.metrics import mean_absolute_error, mean_squared_error
-
-# Deep Learning: TensorFlow + Keras
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
 from tensorflow.keras.applications import ResNet50
-from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import ModelCheckpoint
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.optimizers import Adam
+from tqdm import tqdm            
 
-# Image Processing
-from PIL import Image                  # Pillow for image file handling
 
-try:
+def in_colab():
+    """
+    Check to see if script is being run in a google colab environment
+    """
+    try:
+        import google.colab
+        return True
+    except ImportError:
+        return False
+
+if in_colab():
     from google.colab import drive
     drive.mount('/content/drive')
     os.listdir('/content/drive/MyDrive')
@@ -39,8 +36,8 @@ try:
     val_df = pd.read_csv(os.path.join(base_path, 'gt_avg_valid.csv'))
     test_df = pd.read_csv(os.path.join(base_path, 'gt_avg_test.csv'))
     print("Loaded data from Google Drive")
-except Exception as e:
-    print("Not running in Colab or failed to load from Drive:", e)
+
+else:
     try:
         train_df = pd.read_csv('gt_avg_train.csv')
         val_df = pd.read_csv('gt_avg_valid.csv')
@@ -53,7 +50,6 @@ except Exception as e:
         test_df = None
 
 
-
 print(train_df.head())
 print(val_df.head())
 print(test_df.head())
@@ -62,26 +58,24 @@ print(len(train_df))
 print(len(val_df))
 print(len(test_df))
 
-def in_colab():
-    return 'google.colab' in sys.modules
 
-if in_colab():
-    def get_file_path(folder, fname, use_cropped_faces=True):
-        if use_cropped_faces:
-            fname = fname.replace('.jpg', '.jpg_face.jpg')
+def get_file_path(folder: str, fname: str, use_cropped_faces=True) -> str:
+    """
+    Create file path to facial image data. If in_colab(): is true
+    this function will add base_path to the file path.
+    """
+    if use_cropped_faces:
+        fname = fname.replace('.jpg', '.jpg_face.jpg')
+    if in_colab:
         return os.path.join(base_path, folder, fname)
-    train_df['file_path'] = train_df['file_name'].apply(lambda x: get_file_path('train', x))
-    val_df['file_path'] = val_df['file_name'].apply(lambda x: get_file_path('valid', x))
-    test_df['file_path']  = test_df['file_name'].apply(lambda x: get_file_path('test', x))
-
-else:
-    def get_file_path(folder, fname, use_cropped_faces=True):
-        if use_cropped_faces:
-            fname = fname.replace('.jpg', '.jpg_face.jpg')
+    else:
         return os.path.join(folder, fname)
-    train_df['file_path'] = train_df['file_name'].apply(lambda x: get_file_path('train', x))
-    val_df['file_path'] = val_df['file_name'].apply(lambda x: get_file_path('valid', x))
-    test_df['file_path']  = test_df['file_name'].apply(lambda x: get_file_path('test', x))
+
+# Apply get_file_path() custom function to train_df, val_df, and test_df utilizing lambda
+train_df['file_path'] = train_df['file_name'].apply(lambda x: get_file_path('train', x))
+val_df['file_path'] = val_df['file_name'].apply(lambda x: get_file_path('valid', x))
+test_df['file_path']  = test_df['file_name'].apply(lambda x: get_file_path('test', x))
+
 
 # We would like to have a test set that includes specifically the ages we care about too. 
 # So let's create one from test_df
@@ -93,7 +87,25 @@ test_df_relevant = test_df[(test_df['real_age'] >= 13) & (test_df['real_age'] <=
 test_df_13 = test_df[test_df['real_age'] <= 13]
 test_df_40 = test_df[test_df['real_age'] >= 40]
 
-def load_and_preprocess(path, label):
+
+def load_and_preprocess(path: tf.Tensor, label: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+    """
+    Loads an image from a file path tensor and applies preprocessing steps.
+
+    This function reads an image file from disk, decodes it into a tensor,
+    resizes it to a fixed size (224x224), and normalizes pixel values to the [0, 1] range.
+
+    Args:
+        path (tf.Tensor): A tensor of type tf.string representing the file path to the image.
+        label (tf.Tensor): A tensor representing the label associated with the image.
+                           Typically an integer or float (e.g., age or class index).
+
+    Returns:
+        tuple: A tuple (image, label), where:
+            - image (tf.Tensor): The preprocessed image tensor of shape (224, 224, 3),
+                                 dtype tf.float32.
+            - label (tf.Tensor): The label tensor, unchanged or cast as needed.
+    """
     image = tf.io.read_file(path)
     image = tf.image.decode_jpeg(image, channels=3)         # Decode image
     image = tf.image.resize(image, [224, 224])              # Resize to uniform size
@@ -101,18 +113,49 @@ def load_and_preprocess(path, label):
     return image, label
 
 
+
+
 def load_data(df, batch_size=32, shuffle=True):
+    """
+    Loads and prepares a TensorFlow dataset from a DataFrame of file paths and labels.
 
-    file_paths = df['file_path'].values
-    labels = df['real_age'].values
+    This function constructs a `tf.data.Dataset` pipeline from a given DataFrame. It performs the following steps:
+    1. Extracts file paths and age labels from the DataFrame.
+    2. Creates a dataset of (file_path, label) tuples using `from_tensor_slices`.
+    3. Optionally shuffles the dataset to eliminate ordering bias.
+    4. Applies a preprocessing function to each element in the dataset using `map`.
+    5. Batches the dataset according to the specified batch size.
+    6. Prefetches batches to improve training performance via pipelining.
 
-    dataset = tf.data.Dataset.from_tensor_slices((file_paths, labels))
+    The image shape (excluding batch dimension) is extracted from the first batch
+    and returned along with the dataset object.
 
-    dataset = dataset.map(load_and_preprocess, num_parallel_calls=tf.data.AUTOTUNE)
+    Args:
+        df (pd.DataFrame): A DataFrame containing 'file_path' and 'real_age' columns.
+        batch_size (int): Number of samples per batch. Default is 32.
+        shuffle (bool): Whether to shuffle the dataset. Default is True.
 
-    if shuffle:
-        dataset = dataset.shuffle(buffer_size=1000)
+    Returns:
+        dataset (tf.data.Dataset): A dataset of preprocessed (image, label) pairs. Done iteratively on an as needed basis. 
+        image_shape (tf.TensorShape): The shape of one preprocessed image (H, W, C), excluding batch size.
+    """
 
+    file_paths = df['file_path'].values # create 1 dimensional np.ndarray of file paths
+    labels = df['real_age'].values # create 1 dimensional np.ndarray of age labels
+    
+    # from_tensor_slices creates a dataset object that can iterate over (file_path, label) tuples, which it created 
+    dataset = tf.data.Dataset.from_tensor_slices((file_paths, labels)) # by performing row wise slices of file_paths and labels arrays
+
+    if shuffle: 
+        # Shuffle the tuples returned by from_tensor_slices so that any unintended order
+        dataset = dataset.shuffle(buffer_size=1000) # in the data which might tip off the model will be corrected for
+
+    # Instruct dataset object on how to load and pre_process each (file_path, label) tuple it contains
+    dataset = dataset.map(load_and_preprocess, num_parallel_calls=tf.data.AUTOTUNE) # tf.data.AUTOTUNE will determine how many
+                                                                                    # tuples to load and process based on memory and 
+                                                                                    # compute constraints 
+    # The below commands execute all of the above dataset commands in order
+    # for all samples in batch_size and all prefetched samples in the amount determined by tf.data.AUTOTUNE
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(tf.data.AUTOTUNE)
 
@@ -120,11 +163,15 @@ def load_data(df, batch_size=32, shuffle=True):
     for images, _ in dataset.take(1):
         image_shape = images.shape[1:]  # Drop batch dimension
 
-    return dataset, image_shape
+    # return samples in data set and image_shape for samples in dataset 
+    return dataset, image_shape # This will be done on an as needed basis throughout training
 
-train_ds, image_shape = load_data(train_df, batch_size=32, shuffle=True)
-val_ds, _ = load_data(val_df, batch_size=32, shuffle=False)
-test_ds, _ = load_data(test_df, batch_size=32, shuffle=False)
-test_ds_relevant, _ = load_data(test_df_relevant, batch_size=32, shuffle=False)
-test_ds_13, _ = load_data(test_df_13, batch_size=32, shuffle=False)
-test_ds_40, _ = load_data(test_df_40, batch_size=32, shuffle=False)
+
+train_ds, image_shape = load_data(train_df, batch_size=32, shuffle=True) # Assign dataset object to train_ds and image shape to image_shape
+val_ds, _ = load_data(val_df, batch_size=32, shuffle=False) # We already have the value for our image_shape variable so we just
+test_ds, _ = load_data(test_df, batch_size=32, shuffle=False) # assign it to a placeholder variable for the rest of the load_data() calls.
+
+
+test_ds_relevant, _ = load_data(test_df_relevant, batch_size=32, shuffle=False) # Loads data for ages between 13 and 40 (potential close calls)
+test_ds_13, _ = load_data(test_df_13, batch_size=32, shuffle=False) # Loads data for ages 13 and under
+test_ds_40, _ = load_data(test_df_40, batch_size=32, shuffle=False) # loads data for ages 40 and up

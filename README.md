@@ -1,4 +1,4 @@
-🧑‍💻 **Facial Age Estimation CNN**  
+# 🧑‍💻 **Facial Age Estimation CNN**  
 Good Seed, a supermarket chain, is exploring whether data science can help improve compliance with alcohol sales regulations — specifically by reducing the risk of selling alcohol to underage individuals. In this project, we construct a convolutional neural network (CNN) to estimate a person's age from facial images, and compare its performance to that of human estimators.
 
 🚀 **Project Overview**    

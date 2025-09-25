@@ -64,3 +64,29 @@ facial_age_estimation_cnn/
 ├── gt_avg_valid.csv
 ├── README.md
 └── requirements.txt
+
+---
+
+## ⚙️ Setup / Running Notebooks
+
+To run the Jupyter notebooks in this project, ensure you have the required packages installed. **Conda is recommended**, especially on Windows, but any Python virtual environment will work.
+
+1. Create and activate your environment:
+
+**Using Conda (recommended on Windows):**
+```powershell
+conda create --name project_name_env python=3.11
+conda activate project_name_env
+```
+
+---
+
+## 🧠 Authors
+
+- Developed by Brett Kunkel | [www.linkedin.com/in/brett-kunkel](www.linkedin.com/in/brett-kunkel) | brttkunkel@gmail.com
+
+---
+
+## 📜 License
+
+This project is licensed under the MIT License.

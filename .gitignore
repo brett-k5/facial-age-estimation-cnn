@@ -13,13 +13,6 @@ __pycache__/
 # Jupyter
 .ipynb_checkpoints/
 
-# Logs and temp files
-logs/
-*.log
-*.tmp
-.DS_Store
-Thumbs.db
-
 # Build artifacts
 build/
 dist/

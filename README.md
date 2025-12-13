@@ -19,13 +19,6 @@ Near Human level performance on ages 13 to 40 (MAE: 5.52 for the model vs. 4.23 
 The model exhibited significantly poorer performance on ages gelow 13 where the data was sparser. Specifically, it predicted children ages 13 and under were over 21 14.6 percent of the time, compared to just 2.55 percent of the time for humans. 
 
 📊 **Instructions for Loading Data and Running Scripts**   
-The train, valid, and test image sets were too large to be uploaded to github, and they can be accessed at the following google drive links:
-
-train: https://drive.google.com/drive/folders/1ozo04vS91jm7as5AJ1YntpgSdNNB0lc9?usp=drive_link  
-valid: https://drive.google.com/drive/folders/162wqDbiJjxsQiHaGuOm2x7YN1NoYsFV5?usp=drive_link  
-test: https://drive.google.com/drive/folders/1CSW-DWvmDyfrNBnMBC5l5WInaGnX0xDR?usp=drive_link
-
-If, for some reason, you are struggling to download the data sets from my google drive you can try googling the APPA REAL dataset. As of the time I am writing this you can find it on kaggle here: https://www.kaggle.com/datasets/abhikjha/appa-real-face-cropped
 
 The train, valid, and test image sets should all be moved to the project directory once they are downloaded. As you can see from the pre_processing.py script they are loaded by utilizing their associated file paths which appear in gt_avg_train.csv, gt_avg_valid.csv, and gt_avg_test.csv respectively. 
 
@@ -69,7 +62,7 @@ facial_age_estimation_cnn/
 ---
 ## 📌 Dataset  
 
-You can download the APPA-REAL dataset used in this project at: https://chalearnlap.cvc.uab.es/dataset/26/description/
+You can download the APPA-REAL dataset used in this project at: https://www.kaggle.com/datasets/abhikjha/appa-real-face-cropped
 ## ⚙️ Setup / Running Notebooks
 
 To run the Jupyter notebooks in this project, ensure you have the required packages installed. **Conda is recommended**, especially on Windows, but any Python virtual environment will work.

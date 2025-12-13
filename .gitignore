@@ -27,3 +27,8 @@ dist/
 
 # Model files
 models/
+
+# datasets
+gt_avg_test.csv
+gt_avg_train.csv
+gt_avg_valid.csv

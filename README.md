@@ -67,7 +67,9 @@ facial_age_estimation_cnn/
 ```
 
 ---
+## 📌 Dataset  
 
+You can download the APPA-REAL dataset used in this project at: https://chalearnlap.cvc.uab.es/dataset/26/description/
 ## ⚙️ Setup / Running Notebooks
 
 To run the Jupyter notebooks in this project, ensure you have the required packages installed. **Conda is recommended**, especially on Windows, but any Python virtual environment will work.

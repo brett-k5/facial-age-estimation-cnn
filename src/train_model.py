@@ -133,7 +133,7 @@ def train_model(model: tf.keras.Model,
               epochs=epochs,
               steps_per_epoch=steps_per_epoch, # one step per batch
               validation_steps=validation_steps, # number of times loss is evaluated per epoch
-              callbacks=[tensorboard_callback], # log results
+              callbacks=[tensorboard_callback, checkpoint], # log results
               verbose=2)
 
     return model

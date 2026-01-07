@@ -20,9 +20,13 @@ The model exhibited significantly poorer performance on ages gelow 13 where the 
 
 📊 **Instructions for Loading Data and Running Scripts**   
 
+### If Running from local device:
 The train, valid, and test image sets should all be moved to the project directory once they are downloaded. As you can see from the pre_processing.py script they are loaded by utilizing their associated file paths which appear in gt_avg_train.csv, gt_avg_valid.csv, and gt_avg_test.csv respectively. 
 
 Each of the .py scripts in the src directory should be run by using python -m src.scrip_name in the terminal of your IDE from the project directory to ensure that they are running from the project directory and properly accessing all of the subdirectories contained in the main project directory. 
+
+### If Running on Google Colab:
+If you don't have GPU capabilities on your computer you will likely have to upload to colab or another cloud platform to train. In that case, you can upload the data to your google drive and utilize the train_model_colab.ipynb notebook. The notebook contains instructions for which .py scripts to load for training. 
 
 🚀 **GPU Compatibility**  
 All .py files in the script are written to be compatible with running in google colab, as are all notebooks, with the exception of the results_and_analysis notebook, which has not code that could conceivably benefit from GPU availability. I included notebooks set up to run the train_model.py script and the model_eval scripts in google colab. These notebooks contain comments to guide you on which files need to be uploaded when using colab's files.upload() function. You can simply upload them to colab and follow the instructions in the comments. 

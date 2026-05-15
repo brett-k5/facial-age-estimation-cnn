@@ -1,3 +1,5 @@
+"""Create training, validation and testing datasets from file paths to images and labels."""
+
 # Standard library imports
 import os
 import sys
@@ -18,14 +20,13 @@ from tqdm import tqdm
 
 
 def in_colab():
-    """
-    Check to see if script is being run in a google colab environment
-    """
+    """Check to see if script is being run in a google colab environment."""
     try:
         import google.colab
         return True
     except ImportError:
         return False
+
 
 if in_colab():
     from google.colab import drive
@@ -36,7 +37,6 @@ if in_colab():
     val_df = pd.read_csv(os.path.join(base_path, 'gt_avg_valid.csv'))
     test_df = pd.read_csv(os.path.join(base_path, 'gt_avg_test.csv'))
     print("Loaded data from Google Drive")
-
 else:
     try:
         train_df = pd.read_csv('gt_avg_train.csv')
@@ -49,20 +49,24 @@ else:
         val_df = None
         test_df = None
 
-
 print(train_df.head())
 print(val_df.head())
 print(test_df.head())
-
 print(len(train_df))
 print(len(val_df))
 print(len(test_df))
 
 
 def get_file_path(folder: str, fname: str, use_cropped_faces=True) -> str:
-    """
-    Create file path to facial image data. If in_colab(): is true
-    this function will add base_path to the file path.
+    """Create file path to facial image data.
+
+    Args:
+        folder: Folder where data sits.
+        fname: Name of the image file.
+        use_cropped_faces: Determines whether cropped photos are used. Defaults to True.
+    
+    Returns:
+        A file path to the data.
     """
     if use_cropped_faces:
         fname = fname.replace('.jpg', '.jpg_face.jpg')
@@ -71,11 +75,11 @@ def get_file_path(folder: str, fname: str, use_cropped_faces=True) -> str:
     else:
         return os.path.join(folder, fname)
 
+
 # Apply get_file_path() custom function to train_df, val_df, and test_df utilizing lambda
 train_df['file_path'] = train_df['file_name'].apply(lambda x: get_file_path('train', x))
 val_df['file_path'] = val_df['file_name'].apply(lambda x: get_file_path('valid', x))
 test_df['file_path']  = test_df['file_name'].apply(lambda x: get_file_path('test', x))
-
 
 # We would like to have a test set that includes specifically the ages we care about too. 
 # So let's create one from test_df
@@ -89,35 +93,31 @@ test_df_40 = test_df[test_df['real_age'] >= 40]
 
 
 def load_and_preprocess(path: tf.Tensor, label: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-    """
-    Loads an image from a file path tensor and applies preprocessing steps.
+    """Load an image from a file path tensor and appy preprocessing steps.
 
-    This function reads an image file from disk, decodes it into a tensor,
-    resizes it to a fixed size (224x224), and normalizes pixel values to the [0, 1] range.
+    Preprocessing steps include:
+      - reading the image file from disk
+      - decoding it into a tensor
+      - resizing it to (224, 224)
+      - normalizing pixel values to [0, 1]
 
     Args:
-        path (tf.Tensor): A tensor of type tf.string representing the file path to the image.
-        label (tf.Tensor): A tensor representing the label associated with the image.
-                           Typically an integer or float (e.g., age or class index).
+        path: File path to the image.
+        label: Ground truth age label.
 
     Returns:
-        tuple: A tuple (image, label), where:
-            - image (tf.Tensor): The preprocessed image tensor of shape (224, 224, 3),
-                                 dtype tf.float32.
-            - label (tf.Tensor): The label tensor, unchanged or cast as needed.
+            image: Preprocessed image tensor of shape (224, 224, 3), dtype tf.float32.
+            label: Ground truth age label. 
     """
     image = tf.io.read_file(path)
-    image = tf.image.decode_jpeg(image, channels=3)         # Decode image
-    image = tf.image.resize(image, [224, 224])              # Resize to uniform size
-    image = image / 255.0                                   # Normalize to [0, 1]
+    image = tf.image.decode_jpeg(image, channels=3)    # Decode image
+    image = tf.image.resize(image, [224, 224])         # Resize to uniform size
+    image = image / 255.0                              # Normalize to [0, 1]
     return image, label
 
 
-
-
-def load_data(df, batch_size=32, shuffle=True):
-    """
-    Loads and prepares a TensorFlow dataset from a DataFrame of file paths and labels.
+def load_data(df: pd.DataFrame, batch_size: int =32, shuffle: bool =True):
+    """Load and prepare a TensorFlow dataset from a DataFrame of file paths and labels.
 
     This function constructs a `tf.data.Dataset` pipeline from a given DataFrame. It performs the following steps:
     1. Extracts file paths and age labels from the DataFrame.
@@ -131,29 +131,25 @@ def load_data(df, batch_size=32, shuffle=True):
     and returned along with the dataset object.
 
     Args:
-        df (pd.DataFrame): A DataFrame containing 'file_path' and 'real_age' columns.
-        batch_size (int): Number of samples per batch. Default is 32.
-        shuffle (bool): Whether to shuffle the dataset. Default is True.
+        df: A DataFrame containing 'file_path' and 'real_age' columns.
+        batch_size: Number of samples per batch. Default is 32.
+        shuffle: Whether to shuffle the dataset. Default is True.
 
     Returns:
         dataset (tf.data.Dataset): A dataset of preprocessed (image, label) pairs. Done iteratively on an as needed basis. 
         image_shape (tf.TensorShape): The shape of one preprocessed image (H, W, C), excluding batch size.
     """
-
     file_paths = df['file_path'].values # create 1 dimensional np.ndarray of file paths
     labels = df['real_age'].values # create 1 dimensional np.ndarray of age labels
-    
-    # from_tensor_slices creates a dataset object that can iterate over (file_path, label) tuples, which it created 
-    dataset = tf.data.Dataset.from_tensor_slices((file_paths, labels)) # by performing row wise slices of file_paths and labels arrays
+    dataset = tf.data.Dataset.from_tensor_slices((file_paths, labels)) # Lazily slice off tuples from file_paths and labels numpy arrays. 
 
     if shuffle: 
         # Shuffle the tuples returned by from_tensor_slices so that any unintended order
         dataset = dataset.shuffle(buffer_size=1000) # in the data which might tip off the model will be corrected for
 
-    # Instruct dataset object on how to load and pre_process each (file_path, label) tuple it contains
-    dataset = dataset.map(load_and_preprocess, num_parallel_calls=tf.data.AUTOTUNE) # tf.data.AUTOTUNE will determine how many
-                                                                                    # tuples to load and process based on memory and 
-                                                                                    # compute constraints 
+    # Instruct dataset object on how to load and pre_process each (file_path, label) tuple it slices off
+    dataset = dataset.map(load_and_preprocess, num_parallel_calls=tf.data.AUTOTUNE)
+
     # The below commands execute all of the above dataset commands in order
     # for all samples in batch_size and all prefetched samples in the amount determined by tf.data.AUTOTUNE
     dataset = dataset.batch(batch_size)
